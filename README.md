@@ -4,10 +4,12 @@
 OpenCPE aims to be an all-in-one tool for Cloud resource control with heavily opinionated defaults, focusing on ease of use and maintenance. 
 
 Among the features that differ OpenCPE from other monitoring/notification systems, it includes:
-- Pre-defined sensible policies written at the software-level, avoiding a learning curve by requiring users to write their own policies
+- Pre-defined sensible policies, avoiding a learning curve by requiring users to write their own policies
 - All-in-one functionality: logging, mailing and all other actions are not required to install any additional plugins/packages
-- Easy account management, being able to parse all required configuration by a single JSON file
-- Eliminate integrations by not requiring metrics to go through a data-agreggator 
+- Simple configuration, being able to parse all required configuration options by a single JSON file
+- Ability to run multiple accounts with specific differing environment needs for each
+- Specific edge-case manipulation of policies by including tag-based "ignore" capabilities defined in the configuration file
+  
 
 ## Architecture Overview
 <img width="1159" height="605" alt="openCPEBasicArchitecture" src="https://github.com/user-attachments/assets/c455be7f-57bd-4762-8386-51f0dab7b53d" />
@@ -39,5 +41,6 @@ export PATH=$PATH:~/go/bin
 ## Getting Started
 
 TBD
+
 
 
