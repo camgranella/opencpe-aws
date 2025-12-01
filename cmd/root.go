@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/bazgab/opencpe/config"
 	"github.com/bazgab/opencpe/utils/logging"
 	"github.com/spf13/cobra"
@@ -9,15 +8,15 @@ import (
 )
 
 // Flag declaration
+var flagConfig string
 var flagPolicy string
 var flagRegion string
 
 var rootCmd = &cobra.Command{
-	Use:   "opencpe",
-	Short: "All-in-one Cloud-Native Policy Engine with sensible defaults",
+	Use:     "opencpe",
+	Short:   "All-in-one Cloud-Native Policy Engine with sensible defaults",
+	Version: "0.0.1",
 	Long: `OpenCPE is a tool for managing cloud resources with heavily opinionated defaults.
-
-Note: All Global flags are required
 	
 A comprehensive policy reference and usage instructions can be found at https://github.com/bazgab/opencpe
 `,
@@ -27,10 +26,6 @@ A comprehensive policy reference and usage instructions can be found at https://
 			cmd.Help()
 			return
 		}
-
-		fmt.Println("Initializing: ")
-		fmt.Printf("Policy: %s\n", flagPolicy)
-		fmt.Printf("Region: %s\n", flagRegion)
 
 		// Testing packages
 		config.LoadConfig()
@@ -48,17 +43,13 @@ func Execute() {
 
 func init() {
 
-	rootCmd.PersistentFlags().StringVar(&flagRegion, "region", "", "Region to be queried (default is $OPENCPE_DEFAULT_REGION)")
+	rootCmd.PersistentFlags().StringVar(&flagConfig, "config", "", "Configuration file")
 	rootCmd.PersistentFlags().StringVar(&flagPolicy, "policy", "", "Policy to be executed")
-
-	err := rootCmd.MarkPersistentFlagRequired("region")
-	if err != nil {
-		panic(err)
-	}
-
-	err = rootCmd.MarkPersistentFlagRequired("policy")
-	if err != nil {
-		panic(err)
-	}
-
+	rootCmd.PersistentFlags().StringVar(&flagRegion, "region", "", "Region to be queried")
+	/*
+		err := rootCmd.MarkPersistentFlagRequired("config")
+		if err != nil {
+			panic(err)
+		}
+	*/
 }
