@@ -30,7 +30,7 @@ type IgnoredTags struct {
 
 var notifyCmd = &cobra.Command{
 	Use:   "notify",
-	Short: "only notify resource owners",
+	Short: "notify resource owners of policy infringement",
 	Long:  `This command only notifies resource owners of policy infringement, as opposed to notify-and-delete.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		// Check if the global flag "policy" was actually set by the user
