@@ -34,9 +34,13 @@ var notifyCmd = &cobra.Command{
 	Long:  `This command only notifies resource owners of policy infringement, as opposed to notify-and-delete.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		// Check if the global flag "policy" was actually set by the user
-		if !cmd.Flags().Changed("policy") {
-			return fmt.Errorf("required flag 'policy' not set for the 'notify' command")
+		RequiredFlags := []string{"config", "policy", "region"}
+		for _, flag := range RequiredFlags {
+			if !cmd.Flags().Changed(flag) {
+				return fmt.Errorf("required flag %s not set for the 'notify' command", flag)
+			}
 		}
+
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
