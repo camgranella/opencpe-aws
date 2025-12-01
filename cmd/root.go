@@ -34,7 +34,8 @@ A comprehensive policy reference and usage instructions can be found at https://
 
 		// Testing packages
 		config.LoadConfig()
-		logging.ResourceInfoLogging()
+		logging.JSONInfoLogger()
+		logging.TextInfoLogger()
 	},
 }
 
