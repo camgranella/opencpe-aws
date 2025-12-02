@@ -6,7 +6,7 @@
 Sample Usage
 
 ```sh
-opencpe notify --config="configuration.json" --policy="instance-age" --region="us-east-1" 
+opencpe notify --config="config.json" --region="us-east-1" --policy="instance-age" 
 ```
 
 Example Configuration file:
@@ -14,7 +14,8 @@ Example Configuration file:
 ```json
 {
     "authentication": {
-        "aws_profile": "db-prod" 
+        "aws_profile": "db-prod"
+        "aws_account_id": 9037210985
     },
     "notification": {
         "smtp_host": "smtp.example.com",
@@ -23,8 +24,8 @@ Example Configuration file:
         "email_password":"your-secure-password"
     },
     "ignored_tags": {
-        "owner": "admin",
-        "project": "current-project-name"
+        "owner": ["admin", "project-lead"]
+        "project": ["current-project-name"]
     }
 }
 ```
