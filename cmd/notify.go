@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bazgab/opencpe/policies"
+	"github.com/bazgab/opencpe/utils/errors"
 	"github.com/bazgab/opencpe/utils/logging"
 	"github.com/spf13/cobra"
 	"log/slog"
@@ -75,9 +76,15 @@ var notifyCmd = &cobra.Command{
 		logging.BreakerLine()
 		fmt.Println()
 
+		errors.IdentityCheck()
+
 		//Check for policy
 		if flagPolicy == "instance-age-2-days" {
+			fmt.Println("Policy: instance-age-2-days")
+			fmt.Printf("Profile: %s\n", cfg.Authentication.AwsProfile)
+			fmt.Printf("Region: %s\n", flagRegion)
 			policies.InstanceAge2Days(cfg.Authentication.AwsProfile, flagRegion)
+
 		}
 
 	},
