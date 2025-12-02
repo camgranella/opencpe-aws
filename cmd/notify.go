@@ -13,7 +13,8 @@ import (
 
 type Config struct {
 	Authentication struct {
-		AwsProfile string `json:"aws_profile"`
+		AwsProfile   string `json:"aws_profile"`
+		AwsAccountId int    `json:"aws_account_id"`
 	} `json:"authentication"`
 
 	Notification struct {
@@ -76,7 +77,7 @@ var notifyCmd = &cobra.Command{
 		logging.BreakerLine()
 		fmt.Println()
 
-		errors.IdentityCheck()
+		errors.IdentityCheck(cfg.Authentication.AwsProfile, flagRegion, cfg.Authentication.AwsAccountId)
 
 		//Check for policy
 		if flagPolicy == "instance-age-2-days" {

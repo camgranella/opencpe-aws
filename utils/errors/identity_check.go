@@ -5,30 +5,33 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/bazgab/opencpe/utils/logging"
 	"log"
 	"os"
+	"strconv"
 )
 
-func IdentityCheck(profile string, region string, account string) {
+func IdentityCheck(profile string, region string, account int) {
 	targetProfile := profile
 	targetRegion := region
 	expectedAccount := account
 
-	fmt.Println("------ IDENTITY CHECK ------")
+	fmt.Println("Identity Check:")
 	fmt.Println("")
-	fmt.Println("------ ENVIRONMENT DIAGNOSTICS ------")
+	fmt.Println("----- ENVIRONMENT DIAGNOSTICS -----")
 	if os.Getenv("AWS_PROFILE") == "" {
-		fmt.Println("AWS_PROFILE environment variable not set.")
+		fmt.Println("AWS_PROFILE env var not set.")
 	} else {
 		fmt.Printf("AWS_PROFILE env var: '%s'\n", os.Getenv("AWS_PROFILE"))
 	}
 	if os.Getenv("AWS_REGION") == "" {
-		fmt.Println("AWS_REGION environment variable not set.")
+		fmt.Println("AWS_REGION env var not set.")
 	} else {
 		fmt.Printf("AWS_REGION env var: '%s'\n", os.Getenv("AWS_REGION"))
 	}
-	fmt.Println("-------------------------------------")
+	fmt.Println("-----------------------------------")
 
+	fmt.Println("")
 	// Load Config
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithSharedConfigProfile(targetProfile),
@@ -40,17 +43,19 @@ func IdentityCheck(profile string, region string, account string) {
 
 	client := sts.NewFromConfig(cfg)
 
-	// Ask AWS: "Who am I?"
 	identity, err := client.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
 	if err != nil {
-		log.Fatalf("Authentication Failed: %v\n(Check if you ran 'aws sso login --profile staging')", err)
+		log.Fatalf("Authentication Failed: %v\n(Check if you ran 'aws sso login --profile desired-profile')", err)
 	}
 
-	currentAccount := *identity.Account
+	currentAccount, err := strconv.Atoi(*identity.Account)
+	if err != nil {
+		log.Fatalf("Failed to convert account ID to int: %v", err)
+	}
 
 	fmt.Println("------ AUTHENTICATION RESULT ------")
-	fmt.Printf("Connected Account ID: %s\n", currentAccount)
-	fmt.Printf("Expected Account ID:  %s\n", expectedAccount)
+	fmt.Printf("Connected Account ID: %d\n", currentAccount)
+	fmt.Printf("Expected Account ID:  %d\n", expectedAccount)
 	fmt.Printf("Connected ARN:        %s\n", *identity.Arn)
 	fmt.Println("-----------------------------------")
 
@@ -61,6 +66,6 @@ func IdentityCheck(profile string, region string, account string) {
 	} else {
 		fmt.Println("✅ Account ID matches.")
 		fmt.Println("If this matches, but you see 0 instances, verify the INSTANCE ID in the console.")
-		fmt.Println("Does the Instance ID exist in region us-east-1 of THIS specific account?")
 	}
+	logging.BreakerLine()
 }
