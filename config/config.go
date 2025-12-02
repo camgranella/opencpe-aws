@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"log"
 )
@@ -13,5 +14,7 @@ func LoadConfig(profile string) {
 	)
 	if err != nil {
 		log.Fatalf("unable to load SDK config: %v", err)
+	} else {
+		fmt.Printf("Successfully loaded -- %s -- profile\n", profile)
 	}
 }

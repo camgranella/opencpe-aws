@@ -2,8 +2,11 @@ package logging
 
 import (
 	"context"
+	"fmt"
+	"golang.org/x/term"
 	"log/slog"
 	"os"
+	"strings"
 )
 
 // JSON loggers are used for processing files
@@ -35,4 +38,15 @@ func TextRequestOutputLogger(msg string, config string, policy string, region st
 		slog.String("Policy", policy),
 		slog.String("Region", region),
 	)
+}
+
+func BreakerLine() {
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		fmt.Println("Error getting terminal size:", err)
+		width = 80 //Fallback terminal width
+	}
+
+	line := strings.Repeat("_", width)
+	fmt.Println(line)
 }

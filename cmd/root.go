@@ -19,6 +19,8 @@ var rootCmd = &cobra.Command{
 	Long: `OpenCPE is a tool for managing cloud resources with heavily opinionated defaults.
 	
 A comprehensive policy reference and usage instructions can be found at https://github.com/bazgab/opencpe
+
+Note: All Global Flags are required.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		// In case there are no flags being passed, return the help page
@@ -43,7 +45,7 @@ func Execute() {
 }
 
 func init() {
-
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.PersistentFlags().StringVar(&flagConfig, "config", "", "Configuration file")
 	rootCmd.PersistentFlags().StringVar(&flagPolicy, "policy", "", "Policy to be executed")
 	rootCmd.PersistentFlags().StringVar(&flagRegion, "region", "", "Region to be queried")

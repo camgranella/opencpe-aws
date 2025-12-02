@@ -3,9 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bazgab/opencpe/config"
 	"github.com/bazgab/opencpe/utils/logging"
 	"github.com/spf13/cobra"
-	"log"
+	"log/slog"
 	"os"
 )
 
@@ -49,27 +50,32 @@ var notifyCmd = &cobra.Command{
 
 		cfgFile, err := os.ReadFile(flagConfig)
 		if err != nil {
-			log.Fatal("Error when opening file: ", err)
+			slog.Error("Error when opening file: ", err)
 		}
 
-		var config Config
+		var cfg Config
 
-		err = json.Unmarshal(cfgFile, &config)
+		err = json.Unmarshal(cfgFile, &cfg)
 		if err != nil {
-			log.Fatal("Error during Unmarshal(): ", err)
+			slog.Error("Error during Unmarshal(): ", err)
 		}
-
+		logging.BreakerLine()
+		fmt.Println("")
 		fmt.Println("Loaded Configuration:")
-		fmt.Printf("-- Authentication.Profile: %s\n", config.Authentication.AwsProfile)
-		fmt.Printf("-- Notification.SMTP Host: %s\n", config.Notification.SmtpHost)
-		fmt.Printf("-- Notification.SMTP Port: %d\n", config.Notification.SmtpPort)
-		fmt.Printf("-- Notification.From Email: %s\n", config.Notification.EmailFrom)
-		for _, owner := range config.IgnoredTags.Owner {
+		fmt.Printf("-- Authentication.Profile: %s\n", cfg.Authentication.AwsProfile)
+		fmt.Printf("-- Notification.SMTP Host: %s\n", cfg.Notification.SmtpHost)
+		fmt.Printf("-- Notification.SMTP Port: %d\n", cfg.Notification.SmtpPort)
+		fmt.Printf("-- Notification.From Email: %s\n", cfg.Notification.EmailFrom)
+		for _, owner := range cfg.IgnoredTags.Owner {
 			fmt.Printf("-- IgnoredTags.Owner: %s\n", owner)
 		}
-		for _, project := range config.IgnoredTags.Project {
+		for _, project := range cfg.IgnoredTags.Project {
 			fmt.Printf("-- IgnoredTags.Project: %s\n", project)
 		}
+		logging.BreakerLine()
+		fmt.Println()
+		//Load AWS Profile Config
+		config.LoadConfig(cfg.Authentication.AwsProfile)
 
 	},
 }
