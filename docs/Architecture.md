@@ -28,7 +28,11 @@ Example Configuration file:
     }
 }
 ```
-Important: The email will be sent to the resource owner's email, which should be tagged in the resource as "OwnerEmail" as the key and their respective email as the value
+
+### Important Notes: 
+
+- The email will be sent to the resource owner's email, which should be tagged in the resource as "OwnerEmail" as the key and their respective email as the value
+- As of the time of writing this, OpenCPE only checks for instances that have the state of "running"
 
 
 ## Reference
