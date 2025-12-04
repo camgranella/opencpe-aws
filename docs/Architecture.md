@@ -15,7 +15,7 @@ Example Configuration file:
 {
     "authentication": {
         "aws_profile": "prod",
-        "aws_account_id": 0123456789,
+        "aws_account_id": 123456789,
         "aws_account_name": "Development-team" 
     },
     "notification": {
