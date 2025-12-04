@@ -100,7 +100,6 @@ var notifyCmd = &cobra.Command{
 
 		errors.IdentityCheck(cfg.Authentication.AwsProfile, flagRegion, cfg.Authentication.AwsAccountId)
 
-		//Only one policy so far, but this logic will have to be re-written
 		p := policies.PolicyStruct{
 			Policy:     flagPolicy,
 			AwsProfile: cfg.Authentication.AwsProfile,
