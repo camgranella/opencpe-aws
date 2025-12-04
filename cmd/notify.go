@@ -101,141 +101,133 @@ var notifyCmd = &cobra.Command{
 		errors.IdentityCheck(cfg.Authentication.AwsProfile, flagRegion, cfg.Authentication.AwsAccountId)
 
 		//Only one policy so far, but this logic will have to be re-written
-		if flagPolicy == "instance-age-2-days" {
-			fmt.Println("")
-			fmt.Println("Policy: instance-age-2-days")
-			fmt.Printf("Profile: %s\n", cfg.Authentication.AwsProfile)
-			fmt.Printf("Region: %s\n", flagRegion)
+		p := policies.PolicyStruct{
+			Policy:     flagPolicy,
+			AwsProfile: cfg.Authentication.AwsProfile,
+			Region:     flagRegion,
+			Config:     flagConfig,
+		}
 
-			appConfig, _ := policies.LoadConfig(flagConfig)
+		instances := policies.SelectPolicy(p)
 
-			instances, err := policies.InstanceAge2Days(cfg.Authentication.AwsProfile, flagRegion, appConfig.IgnoredTags)
-			if err != nil {
-				log.Fatal(err)
+		fmt.Printf("Received %d instances.\n", len(instances))
+
+		// Parsing template before the loop for memory efficiency
+		t, err := template.ParseFiles("utils/templates/email_template.html")
+		if err != nil {
+			log.Fatal("Could not parse template:", err)
+		}
+		// Loop for finding instances that match filters
+		for _, inst := range instances {
+			fmt.Printf("[ Instance Name: %s | Instance Id: %s | Owner: %s ]\n", inst.Name, inst.Id, inst.Owner)
+
+			d := EmailData{
+				InstanceName: inst.Name,
+				InstanceId:   inst.Id,
+				Region:       flagRegion,
+				AwsAccount:   cfg.Authentication.AwsAccountName,
+				AdminEmail:   cfg.Notification.AdminEmail,
 			}
 
-			logging.BreakerLine()
-			fmt.Println("")
-			fmt.Printf("Received %d instances.\n", len(instances))
-
-			// Parsing template before the loop for memory efficiency
-			t, err := template.ParseFiles("utils/templates/email_template.html")
-			if err != nil {
-				log.Fatal("Could not parse template:", err)
+			var body bytes.Buffer
+			if err := t.Execute(&body, d); err != nil {
+				log.Printf("❌ Template error: %v", err)
+				continue
 			}
-			// Loop for finding instances that match filters
-			for _, inst := range instances {
-				fmt.Printf("[ Instance Name: %s | Instance Id: %s | Owner: %s ]\n", inst.Name, inst.Id, inst.Owner)
 
-				d := EmailData{
-					InstanceName: inst.Name,
-					InstanceId:   inst.Id,
-					Region:       flagRegion,
-					AwsAccount:   cfg.Authentication.AwsAccountName,
-					AdminEmail:   cfg.Notification.AdminEmail,
-				}
+			// Headers have to be manually created (as opposed to templated) for security reasons.
+			// Templated headers would have to be interpreted by the text/template package
+			// which does not have built-in output encoding to protect against XSS attacks
 
-				var body bytes.Buffer
-				if err := t.Execute(&body, d); err != nil {
-					log.Printf("❌ Template error: %v", err)
-					continue
-				}
+			headers := "From: " + cfg.Notification.SenderEmail + "\r\n" +
+				"To: " + inst.Owner + "\r\n" +
+				"Subject:[ACTION REQUIRED] Review: AWS Instance '" + inst.Name + "' Policy Non-compliance\r\n" +
+				"MIME-Version: 1.0\r\n" +
+				"Content-Type: text/html; charset=UTF-8\r\n" +
+				"\r\n"
 
-				// Headers have to be manually created (as opposed to templated) for security reasons.
-				// Templated headers would have to be interpreted by the text/template package
-				// which does not have built-in output encoding to protect against XSS attacks
+			msg := []byte(headers + body.String())
 
-				headers := "From: " + cfg.Notification.SenderEmail + "\r\n" +
-					"To: " + inst.Owner + "\r\n" +
-					"Subject:[ACTION REQUIRED] Review: AWS Instance '" + inst.Name + "' Policy Non-compliance\r\n" +
-					"MIME-Version: 1.0\r\n" +
-					"Content-Type: text/html; charset=UTF-8\r\n" +
-					"\r\n"
+			addr := fmt.Sprintf("%s:%d", cfg.Notification.SmtpEndpoint, cfg.Notification.SmtpPort)
 
-				msg := []byte(headers + body.String())
+			conn, err := net.DialTimeout("tcp4", addr, 5*time.Second)
+			if err != nil {
+				log.Printf("❌ NETWORK ERROR: Your firewall/ISP/Cloud Provider is blocking Port 587.\nError details: %v", err)
+				continue
+			}
 
-				addr := fmt.Sprintf("%s:%d", cfg.Notification.SmtpEndpoint, cfg.Notification.SmtpPort)
+			fmt.Println("✅ TCP Connection established!")
 
-				conn, err := net.DialTimeout("tcp4", addr, 5*time.Second)
-				if err != nil {
-					log.Printf("❌ NETWORK ERROR: Your firewall/ISP/Cloud Provider is blocking Port 587.\nError details: %v", err)
-					continue
-				}
+			fmt.Println("Dialing Port 587 via IPv4...")
+			conn, err = net.Dial("tcp4", addr)
+			if err != nil {
+				log.Printf("❌ Connection failed: %v", err)
+				continue
+			}
 
-				fmt.Println("✅ TCP Connection established!")
+			// Creating SMTP Client
+			c, err := smtp.NewClient(conn, cfg.Notification.SmtpEndpoint)
+			if err != nil {
+				log.Printf("❌ Client creation failed: %v", err)
+				conn.Close()
+				continue
+			}
 
-				fmt.Println("Dialing Port 587 via IPv4...")
-				conn, err = net.Dial("tcp4", addr)
-				if err != nil {
-					log.Printf("❌ Connection failed: %v", err)
-					continue
-				}
-
-				// Creating SMTP Client
-				c, err := smtp.NewClient(conn, cfg.Notification.SmtpEndpoint)
-				if err != nil {
-					log.Printf("❌ Client creation failed: %v", err)
-					conn.Close()
-					continue
-				}
-
-				// Upgrading to TLS - REQUIRED for Port 587
-				tlsConfig := &tls.Config{
-					InsecureSkipVerify: false,
-					ServerName:         cfg.Notification.SmtpEndpoint,
-				}
-				if err = c.StartTLS(tlsConfig); err != nil {
-					log.Printf("❌ StartTLS failed: %v", err)
-					c.Quit()
-					continue
-				}
-
-				// Authenticating
-				auth := smtp.PlainAuth("", cfg.Notification.SmtpUser, cfg.Notification.SmtpPassword, cfg.Notification.SmtpEndpoint)
-				if err = c.Auth(auth); err != nil {
-					log.Printf("❌ Authentication failed: %v", err)
-					c.Quit()
-					continue
-				}
-
-				// Sending
-				if err = c.Mail(cfg.Notification.SenderEmail); err != nil {
-					log.Printf("❌ Sending failure on SenderEmail: %v", err)
-					c.Quit()
-					continue
-				}
-
-				if err = c.Rcpt(inst.Owner); err != nil {
-					log.Printf("❌ Sending failure on Recipient side: %v", err)
-					c.Quit()
-					continue
-				}
-
-				w, err := c.Data()
-				if err != nil {
-					log.Printf("❌ Data command failed: %v", err)
-					c.Quit()
-					continue
-				}
-
-				_, err = w.Write(msg)
-				if err != nil {
-					log.Printf("❌ Write failed: %v", err)
-					c.Quit()
-					continue
-				}
-
-				err = w.Close()
-				if err != nil {
-					log.Printf("❌ Close Data failed: %v", err)
-					c.Quit()
-					continue
-				}
-
+			// Upgrading to TLS - REQUIRED for Port 587
+			tlsConfig := &tls.Config{
+				InsecureSkipVerify: false,
+				ServerName:         cfg.Notification.SmtpEndpoint,
+			}
+			if err = c.StartTLS(tlsConfig); err != nil {
+				log.Printf("❌ StartTLS failed: %v", err)
 				c.Quit()
-				fmt.Println("✅ Success! Email sent via Port 587.")
+				continue
 			}
 
+			// Authenticating
+			auth := smtp.PlainAuth("", cfg.Notification.SmtpUser, cfg.Notification.SmtpPassword, cfg.Notification.SmtpEndpoint)
+			if err = c.Auth(auth); err != nil {
+				log.Printf("❌ Authentication failed: %v", err)
+				c.Quit()
+				continue
+			}
+
+			// Sending
+			if err = c.Mail(cfg.Notification.SenderEmail); err != nil {
+				log.Printf("❌ Sending failure on SenderEmail: %v", err)
+				c.Quit()
+				continue
+			}
+
+			if err = c.Rcpt(inst.Owner); err != nil {
+				log.Printf("❌ Sending failure on Recipient side: %v", err)
+				c.Quit()
+				continue
+			}
+
+			w, err := c.Data()
+			if err != nil {
+				log.Printf("❌ Data command failed: %v", err)
+				c.Quit()
+				continue
+			}
+
+			_, err = w.Write(msg)
+			if err != nil {
+				log.Printf("❌ Write failed: %v", err)
+				c.Quit()
+				continue
+			}
+
+			err = w.Close()
+			if err != nil {
+				log.Printf("❌ Close Data failed: %v", err)
+				c.Quit()
+				continue
+			}
+
+			c.Quit()
+			fmt.Println("✅ Success! Email sent via Port 587.")
 		}
 
 	},

@@ -57,7 +57,7 @@ func InstanceAge2Days(profile string, region string, ignoredTags map[string][]st
 
 	svc := ec2.NewFromConfig(cfg)
 
-	cutoffTime := time.Now().Add(-2 * time.Hour)
+	cutoffTime := time.Now().Add(-48 * time.Hour)
 
 	fmt.Printf("Searching for instances launched BEFORE: %s\n", cutoffTime.Format(time.RFC3339))
 
