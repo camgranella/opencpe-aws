@@ -2,48 +2,14 @@ package policies
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"os"
 	"strings"
 	"time"
 )
-
-type InstanceResult struct {
-	Id     string
-	Name   string
-	Owner  string
-	Uptime int
-}
-
-type AppConfig struct {
-	IgnoredTags map[string][]string `json:"ignored_tags"`
-}
-
-func LoadConfig(filename string) (*AppConfig, error) {
-	bytes, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	var cfg AppConfig
-	if err := json.Unmarshal(bytes, &cfg); err != nil {
-		return nil, err
-	}
-	return &cfg, nil
-}
-
-func sliceContains(slice []string, val string) bool {
-	for _, item := range slice {
-		if strings.EqualFold(item, val) {
-			return true
-		}
-	}
-	return false
-}
 
 // Update signature to accept the ignoredTags map
 func InstanceAge2Days(profile string, region string, ignoredTags map[string][]string) ([]InstanceResult, error) {
